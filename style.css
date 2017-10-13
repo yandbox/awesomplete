@@ -37,6 +37,8 @@ strong {
 }
 
 abbr {
+	/* 重置默认样式 */
+	text-decoration: none;
 	border-bottom: .1em dotted hsl(40, 80%, 40%);
 	cursor: help;
 }
@@ -65,6 +67,7 @@ input {
 	box-shadow: .05em .1em .3em rgba(0,0,0,.3) inset;
 }
 
+/* input 边框搏动效果 */
 @keyframes pulsate {
 	to {
 		box-shadow: .05em .1em .3em rgba(0,0,0,.3) inset, 0 0 .3em .1em #58a;
@@ -105,6 +108,7 @@ header {
 			color: inherit;
 		}
 
+	/* 页面右上角 */
 	.size {
 		position: absolute;
 		top: 1em;
@@ -117,6 +121,7 @@ header {
 		text-align: center;
 		line-height: 1.1;
 		text-indent: -.1em;
+		/* 内部虚线框 */
 		outline: .1em dotted;
 		outline-offset: -.3em;
 		text-decoration: none;
@@ -136,6 +141,7 @@ header {
 			font-style: normal;
 		}
 
+		/* 背景图案 */
 		.size .amp {
 			position: absolute;
 			left: 0; right: 0;
@@ -160,10 +166,12 @@ header {
 		font-size: 80%;
 	}
 
+	/* 背景色块由伪类实现 */
 	nav a::before {
 		content: "";
 		position: absolute;
 		top: 0; left: 0; right: 0; bottom: 0;
+		/* 让文字在色块上面 */
 		z-index: -1;
 		border-radius: .2em;
 		background: hsl(40, 80%, 40%);
@@ -171,6 +179,7 @@ header {
 		transform: skew(-16deg);
 	}
 
+	/* 下载链接的色块 */
 	nav a[href="#download"] {
 		font-weight: 600;
 	}
@@ -202,6 +211,7 @@ pre {
 	position: relative;
 }
 
+/* 代码块的语言标签由伪类实现 */
 pre::before {
 	position: absolute;
 	top: 0;

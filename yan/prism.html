@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <link rel="stylesheet" href="../prism/prism.css" />
+</head>
+<body>
+
+  <pre class="language-markup"><code>&lt;input type="email" /></code></pre>
+	<pre class="language-javascript"><code><script>new Awesomplete('input[type="email"]', {
+	list: ["aol.com", "att.net", "comcast.net", "facebook.com", "gmail.com", "gmx.com", "googlemail.com", "google.com", "hotmail.com", "hotmail.co.uk", "mac.com", "me.com", "mail.com", "msn.com", "live.com", "sbcglobal.net", "verizon.net", "yahoo.com", "yahoo.co.uk"],
+	data: function (text, input) {
+		return input.slice(0, input.indexOf("@")) + "@" + text;
+	},
+	filter: Awesomplete.FILTER_STARTSWITH
+});</script></code></pre>
+
+  <script src="../prism/prism.js" defer></script>
+</body>
+</html>

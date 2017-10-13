@@ -9,7 +9,10 @@
 
 var _ = function (input, o) {
 	var me = this;
-    
+
+		// 为什么添加 instance id
+		// https://github.com/LeaVerou/awesomplete/pull/17068
+		//
     // Keep track of number of instances for unique IDs
     Awesomplete.count = (Awesomplete.count || 0) + 1;
     this.count = Awesomplete.count;
@@ -25,6 +28,7 @@ var _ = function (input, o) {
 
 	o = o || {};
 
+  // 读取 options，并添加到 instance 上
 	configure(this, {
 		minChars: 2,
 		maxItems: 10,
@@ -52,6 +56,7 @@ var _ = function (input, o) {
 		inside: this.container
 	});
 
+  // status 是过滤结果提示，用于 AT
 	this.status = $.create("span", {
 		className: "visually-hidden",
 		role: "status",
@@ -67,6 +72,7 @@ var _ = function (input, o) {
 		input: {
 			"input": this.evaluate.bind(this),
 			"blur": this.close.bind(this, { reason: "blur" }),
+			// 下拉列表的选择，事件实际绑定在 input 上
 			"keydown": function(evt) {
 				var c = evt.keyCode;
 
@@ -90,17 +96,20 @@ var _ = function (input, o) {
 		form: {
 			"submit": this.close.bind(this, { reason: "submit" })
 		},
+		// 点击下拉列表
 		ul: {
 			"mousedown": function(evt) {
 				var li = evt.target;
 
 				if (li !== this) {
-
+					// 用 RegExp 还是用 === 比较好？
 					while (li && !/li/i.test(li.nodeName)) {
 						li = li.parentNode;
 					}
 
 					if (li && evt.button === 0) {  // Only select on left click
+						// 阻止 input blur
+						// /yan/events.html
 						evt.preventDefault();
 						me.select(li, evt.target);
 					}
@@ -113,6 +122,8 @@ var _ = function (input, o) {
 	$.bind(this.input.form, this._events.form);
 	$.bind(this.ul, this._events.ul);
 
+	// 设置 list, 优先次序 list attr > data-list attr > options.list
+	// this.list 是一个 setter
 	if (this.input.hasAttribute("list")) {
 		this.list = "#" + this.input.getAttribute("list");
 		this.input.removeAttribute("list");
@@ -121,17 +132,22 @@ var _ = function (input, o) {
 		this.list = this.input.getAttribute("data-list") || o.list || [];
 	}
 
+  // 用于 destroy
 	_.all.push(this);
 };
 
 _.prototype = {
+	// list 是 setter, back store 为 this._list
 	set list(list) {
+		// [], 由 options.list 指定
 		if (Array.isArray(list)) {
 			this._list = list;
 		}
+		// list string, 由 input[data-list] 或 options.list 指定
 		else if (typeof list === "string" && list.indexOf(",") > -1) {
 				this._list = list.split(/\s*,\s*/);
 		}
+		// 由 input[list] 或 options.list 指定
 		else { // Element or CSS selector
 			list = $(list);
 
@@ -151,6 +167,7 @@ _.prototype = {
 			}
 		}
 
+    // input 已有值，比如刷新页面
 		if (document.activeElement === this.input) {
 			this.evaluate();
 		}
@@ -169,10 +186,12 @@ _.prototype = {
 			return;
 		}
 
+    // 通过 hidden attribute 显示隐藏
 		this.ul.setAttribute("hidden", "");
 		this.isOpened = false;
 		this.index = -1;
 
+		// o.reason 关闭 popup 的原因
 		$.fire(this.input, "awesomplete-close", o || {});
 	},
 
@@ -180,6 +199,7 @@ _.prototype = {
 		this.ul.removeAttribute("hidden");
 		this.isOpened = true;
 
+		// options.autoFirst 自动选择第一个
 		if (this.autoFirst && this.index === -1) {
 			this.goto(0);
 		}
@@ -234,9 +254,9 @@ _.prototype = {
 
 		if (i > -1 && lis.length > 0) {
 			lis[i].setAttribute("aria-selected", "true");
-            
+
 			this.status.textContent = lis[i].textContent + ", list item " + (i + 1) + " of " + lis.length;
-            
+
             this.input.setAttribute("aria-activedescendant", this.ul.id + "_item_" + this.index);
 
 			// scroll to highlighted element in case parent's height is fixed
@@ -264,6 +284,8 @@ _.prototype = {
 			});
 
 			if (allowed) {
+				// options.replace
+				// 示例 Multiple values
 				this.replace(suggestion);
 				this.close({ reason: "select" });
 				$.fire(this.input, "awesomplete-selectcomplete", {
@@ -273,48 +295,62 @@ _.prototype = {
 		}
 	},
 
+	// 生成列表
 	evaluate: function() {
 		var me = this;
 		var value = this.input.value;
 
+		// options.minChars 最少输入字数
 		if (value.length >= this.minChars && this._list.length > 0) {
 			this.index = -1;
 			// Populate list with options that match
+			// 清空内容可以用 .textContent = ''
 			this.ul.innerHTML = "";
 
+			// 过滤
 			this.suggestions = this._list
 				.map(function(item) {
+					// options.data: _.DATA
+					// fn(listItem, inputValue)
 					return new Suggestion(me.data(item, value));
 				})
 				.filter(function(item) {
+					// options.filter: _.FILTER_CONTAINS
+					// fn(suggestion, inputValue)
+					// suggestion.toString() => suggest.label，即对 label 过滤
 					return me.filter(item, value);
 				});
 
+			// 排序，在过滤之后插入之前
+			// options.sort: false
 			if (this.sort !== false) {
 				this.suggestions = this.suggestions.sort(this.sort);
 			}
 
+			// options.maxItems 候选列表最大个数
 			this.suggestions = this.suggestions.slice(0, this.maxItems);
 
+			// 插入
 			this.suggestions.forEach(function(text, index) {
+					// options.item: _.ITEM
 					me.ul.appendChild(me.item(text, value, index));
 				});
 
 			if (this.ul.children.length === 0) {
-                
+
                 this.status.textContent = "No results found";
-                
+
 				this.close({ reason: "nomatches" });
-        
+
 			} else {
 				this.open();
-        
+
                 this.status.textContent = this.ul.children.length + " results found";
 			}
 		}
 		else {
 			this.close({ reason: "nomatches" });
-            
+
                 this.status.textContent = "No results found";
 		}
 	}
@@ -340,7 +376,9 @@ _.SORT_BYLENGTH = function (a, b) {
 	return a < b? -1 : 1;
 };
 
+// 生成 <li>
 _.ITEM = function (text, input, item_id) {
+	// <mark> 高亮 input, 用 re 匹配 input 之前先对它转义，去掉特殊字符
 	var html = input.trim() === "" ? text : text.replace(RegExp($.regExpEscape(input.trim()), "gi"), "<mark>$&</mark>");
 	return $.create("li", {
 		innerHTML: html,
@@ -357,6 +395,14 @@ _.DATA = function (item/*, input*/) { return item; };
 
 // Private functions
 
+// Suggestion 继承自 String
+// 修改 length, toString, valueOf；添加 label, value
+// 这么做好吗
+//
+// data 类型
+// array: [label, value]
+// object: {label, value}
+// string
 function Suggestion(data) {
 	var o = Array.isArray(data)
 	  ? { label: data[0], value: data[1] }
@@ -372,24 +418,35 @@ Suggestion.prototype.toString = Suggestion.prototype.valueOf = function () {
 	return "" + this.label;
 };
 
+// 将配置合并到 instance 上 (instance, defaults, options)
+// 这么做好吗
 function configure(instance, properties, o) {
+	// 以 defaults 为基准
 	for (var i in properties) {
+    // 第一步，合并 dataset
 		var initial = properties[i],
+				// dataset, IE11 支持，IE<11 用 getAttribute
 		    attrValue = instance.input.getAttribute("data-" + i.toLowerCase());
 
+		// number，转为 number
 		if (typeof initial === "number") {
 			instance[i] = parseInt(attrValue);
 		}
+		// boolean，data-* 只要存在即为 true
 		else if (initial === false) { // Boolean options must be false by default anyway
 			instance[i] = attrValue !== null;
 		}
+		// function, dataset 不能设置，设为 null，后面处理 options 时添加回来
 		else if (initial instanceof Function) {
 			instance[i] = null;
 		}
+		// string
 		else {
 			instance[i] = attrValue;
 		}
 
+		// 第二步，合并 options
+		// 只考虑 instance[i] 为 null
 		if (!instance[i] && instance[i] !== 0) {
 			instance[i] = (i in o)? o[i] : initial;
 		}
@@ -400,6 +457,7 @@ function configure(instance, properties, o) {
 
 var slice = Array.prototype.slice;
 
+// con 为 context
 function $(expr, con) {
 	return typeof expr === "string"? (con || document).querySelector(expr) : expr || null;
 }
@@ -408,6 +466,7 @@ function $$(expr, con) {
 	return slice.call((con || document).querySelectorAll(expr));
 }
 
+// 创建 element
 $.create = function(tag, o) {
 	var element = document.createElement(tag);
 
@@ -422,9 +481,11 @@ $.create = function(tag, o) {
 			ref.parentNode.insertBefore(element, ref);
 			element.appendChild(ref);
 		}
+		// props
 		else if (i in element) {
 			element[i] = val;
 		}
+		// attrs
 		else {
 			element.setAttribute(i, val);
 		}

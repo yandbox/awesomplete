@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title></title>
+  <style>
+    p {
+      background: #eee;
+    }
+
+    .hide .b {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <input type="text">
+  <p class="a" tabindex="-1">mousedown keep</p>
+  <p class="b" tabindex="-1">mousedown</p>
+  <p class="c">mousedown preventDefault()</p>
+
+<script>
+  document.querySelector('input').addEventListener('blur', function (event) {
+    console.log(event.type)
+    document.body.className = 'hide' // .b mouseup, click handler 没有机会运行
+  })
+
+  var a = document.querySelector('.a')
+  a.addEventListener('focus', handle)
+  a.addEventListener('mousedown', handle)
+  a.addEventListener('mouseup', handle)
+  a.addEventListener('click', handle)
+  function handle(event) {
+    console.log(this.className, event.type)
+  }
+
+  var b = document.querySelector('.b')
+  b.addEventListener('focus', handle)
+  b.addEventListener('mousedown', handle)
+  b.addEventListener('mouseup', handle)
+  b.addEventListener('click', handle)
+
+  document.querySelector('.c').addEventListener('mousedown', function (event) {
+    event.preventDefault()
+    console.log('.b', event.type)
+  })
+</script>
+</body>
+</html>
